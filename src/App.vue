@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useTelegram } from './composables/useTelegram'
 import WalletConnect from './components/WalletConnect.vue'
 import GiftForm from './components/GiftForm.vue'
+import TonConnectButton from "@/components/TonConnectButton.vue";
 
 const { user } = useTelegram()
 const isWalletConnected = ref<boolean>(false)
@@ -11,7 +12,7 @@ const isWalletConnected = ref<boolean>(false)
 <template>
   <div class="app">
     <h1>🎁 GiftInCase</h1>
-    <WalletConnect v-if="!isWalletConnected" />
+    <TonConnectButton v-if="!isWalletConnected" @connect="isWalletConnected = true" />
     <GiftForm v-else />
   </div>
 </template>
