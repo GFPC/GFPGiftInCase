@@ -2,6 +2,9 @@
   <button @click="handleConnect" :disabled="isLoading">
     {{ buttonText }}
   </button>
+  <div v-if="walletAddress" class="wallet-address">
+    Адрес TON-кошелька: <b>{{ walletAddress }}</b>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -43,7 +46,8 @@ const handleConnect = async () => {
     if (walletAddress.value) {
       console.log('[TonConnectButton] Успешно подключён TON-кошелёк:', walletAddress.value);
     }
-    await sendWalletToBackend(walletAddress.value);
+    // Заглушка: не отправляем на бэкенд
+    // await sendWalletToBackend(walletAddress.value);
   } catch (error) {
     console.error('Ошибка подключения:', error);
     buttonText.value = '❌ Ошибка, попробуйте снова';
@@ -56,24 +60,8 @@ const shortAddress = (addr: string) => {
   return addr ? `${addr.slice(0, 4)}...${addr.slice(-4)}` : '';
 };
 
-const sendWalletToBackend = async (address: string) => {
-  const tg = window.Telegram?.WebApp;
-  if (!tg) return;
-  try {
-    const response = await fetch('https://your-backend.vercel.app/users/wallet', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${tg.initData}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ wallet_address: address })
-    });
-    if (!response.ok) throw new Error('Ошибка сохранения кошелька');
-    console.log('Кошелёк сохранён!');
-  } catch (error) {
-    console.error('Ошибка:', error);
-  }
-};
+// Заглушка: функция не используется
+// const sendWalletToBackend = async (address: string) => {};
 </script>
 
 <style scoped>
@@ -89,5 +77,11 @@ button {
 button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+.wallet-address {
+  margin-top: 16px;
+  font-size: 1.1rem;
+  color: #222;
+  word-break: break-all;
 }
 </style> 
