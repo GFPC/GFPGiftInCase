@@ -18,9 +18,12 @@
 import { ref } from 'vue'
 import { TonConnect, WalletInfo } from '@tonconnect/sdk'
 
+console.log('[WalletConnect] component mounted')
+
 const connector = new TonConnect({
   manifestUrl: 'https://your-app.vercel.app/tonconnect-manifest.json'
 })
+console.log('[WalletConnect] TonConnect instance created', connector)
 
 const walletAddress = ref<string>('')
 const loading = ref(false)
@@ -29,23 +32,33 @@ const error = ref<string>('')
 const connectWallet = async () => {
   loading.value = true
   error.value = ''
+  console.log('[WalletConnect] connectWallet called')
   try {
     const wallets: WalletInfo[] = await connector.getWallets()
+    console.log('[WalletConnect] getWallets result:', wallets)
     if (!wallets.length) {
       error.value = 'Кошельки не найдены. Проверьте manifestUrl.'
       loading.value = false
+      console.error('[WalletConnect] No wallets found')
       return
     }
     const walletConnectionSource = wallets[0]
+    console.log('[WalletConnect] Connecting to wallet:', walletConnectionSource)
     await connector.connect(walletConnectionSource)
+    console.log('[WalletConnect] connector.account:', connector.account)
     walletAddress.value = connector.account?.address || ''
     if (!walletAddress.value) {
       error.value = 'Не удалось получить адрес кошелька.'
+      console.error('[WalletConnect] Failed to get wallet address')
+    } else {
+      console.log('[WalletConnect] Wallet address:', walletAddress.value)
     }
   } catch (e: any) {
     error.value = 'Ошибка подключения: ' + (e?.message || e)
+    console.error('[WalletConnect] Error:', e)
   } finally {
     loading.value = false
+    console.log('[WalletConnect] connectWallet finished')
   }
 }
 </script>
