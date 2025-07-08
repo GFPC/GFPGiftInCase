@@ -1,38 +1,9 @@
-import { ref, onMounted, Ref } from 'vue'
-
-interface TelegramUser {
-  id: number
-  is_bot: boolean
-  first_name: string
-  last_name?: string
-  username?: string
-  language_code?: string
-}
-
-interface TelegramWebApp {
-  expand: () => void
-  initData: string
-  initDataUnsafe: { user?: TelegramUser }
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp?: TelegramWebApp
-    }
-  }
-}
+import { computed } from 'vue'
+import { useMiniApp } from 'vue-tg/latest'
 
 export function useTelegram() {
-  const tg = window.Telegram?.WebApp
-  const user: Ref<TelegramUser | null> = ref(null)
-
-  onMounted(() => {
-    if (tg) {
-      tg.expand()
-      user.value = tg.initDataUnsafe?.user || null
-    }
-  })
-
+  const miniApp = useMiniApp()
+  const tg = computed(() => miniApp)
+  const user = computed(() => miniApp.initDataUnsafe?.user)
   return { tg, user }
 } 
