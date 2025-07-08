@@ -1,22 +1,34 @@
 <template>
   <div class="wallet-connect">
-    <button
-        :disabled="loading"
-        @click="connectWallet"
-        class="ton-btn"
-    >
-      <span v-if="loading">⏳ Подключение...</span>
-      <span v-else>
-        {{ walletAddress ? `Кошелёк: ${walletAddress}` : 'Подключить TON' }}
-      </span>
-    </button>
+    <div v-if="walletAddress">
+      <div>Кошелёк: {{ walletAddress }}</div>
+    </div>
+    <div v-else>
+      <div v-if="wallets.length">
+        <div>Выберите кошелёк для подключения:</div>
+        <ul>
+          <li v-for="wallet in wallets" :key="wallet.appName">
+            <button class="ton-btn" @click="connectWallet(wallet)">
+              <img :src="wallet.imageUrl" :alt="wallet.name" width="24" style="vertical-align:middle;margin-right:8px;">
+              {{ wallet.name }}
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div v-else>
+        <button :disabled="loading" @click="loadWallets" class="ton-btn">
+          <span v-if="loading">⏳ Загрузка кошельков...</span>
+          <span v-else>Показать кошельки</span>
+        </button>
+      </div>
+    </div>
     <div v-if="error" class="error">{{ error }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { TonConnect, WalletInfo } from '@tonconnect/sdk'
+import { TonConnect, WalletInfoRemote } from '@tonconnect/sdk'
 
 console.log('[WalletConnect] component mounted')
 
@@ -28,23 +40,33 @@ console.log('[WalletConnect] TonConnect instance created', connector)
 const walletAddress = ref<string>('')
 const loading = ref(false)
 const error = ref<string>('')
+const wallets = ref<WalletInfoRemote[]>([])
 
-const connectWallet = async () => {
+const loadWallets = async () => {
   loading.value = true
   error.value = ''
-  console.log('[WalletConnect] connectWallet called')
   try {
-    const wallets: WalletInfo[] = await connector.getWallets()
-    console.log('[WalletConnect] getWallets result:', wallets)
-    if (!wallets.length) {
-      error.value = 'Кошельки не найдены. Проверьте manifestUrl.'
-      loading.value = false
-      console.error('[WalletConnect] No wallets found')
-      return
+    const allWallets = await connector.getWallets()
+    // Фильтруем только те, у которых есть bridgeUrl (WebView support)
+    wallets.value = allWallets.filter((w: any) => w.bridgeUrl)
+    console.log('[WalletConnect] Supported wallets:', wallets.value)
+    if (!wallets.value.length) {
+      error.value = 'Нет кошельков, поддерживающих WebView.'
     }
-    const walletConnectionSource = wallets[0]
-    console.log('[WalletConnect] Connecting to wallet:', walletConnectionSource)
-    await connector.connect(walletConnectionSource)
+  } catch (e: any) {
+    error.value = 'Ошибка загрузки кошельков: ' + (e?.message || e)
+    console.error('[WalletConnect] Error loading wallets:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+const connectWallet = async (wallet: WalletInfoRemote) => {
+  loading.value = true
+  error.value = ''
+  console.log('[WalletConnect] connectWallet called for', wallet)
+  try {
+    await connector.connect(wallet)
     console.log('[WalletConnect] connector.account:', connector.account)
     walletAddress.value = connector.account?.address || ''
     if (!walletAddress.value) {
@@ -75,12 +97,15 @@ const connectWallet = async () => {
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 14px 32px;
-  font-size: 1.1rem;
+  padding: 10px 24px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+  margin: 6px 0;
   transition: background 0.2s;
   box-shadow: 0 2px 8px #0098ea33;
+  display: flex;
+  align-items: center;
 }
 .ton-btn:disabled {
   opacity: 0.7;
