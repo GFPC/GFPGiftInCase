@@ -1,37 +1,26 @@
 <template>
-  <button @click="handleConnect" :disabled="isLoading">
+  <button @click="handleConnect" :disabled="isLoading" class="connect-button">
     {{ buttonText }}
   </button>
-  <div v-if="walletAddress" class="wallet-address">
-    Адрес TON-кошелька: <b>{{ walletAddress }}</b>
-  </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted } from 'vue';
 import { TonConnect } from '@tonconnect/sdk';
 
-declare global {
-  interface Window {
-    Telegram?: any;
-  }
-}
-
 const connector = new TonConnect({
-  manifestUrl: 'https://your-frontend.vercel.app/tonconnect-manifest.json'
+  manifestUrl: 'https://your-app.vercel.app/tonconnect-manifest.json'
 });
 
 const walletAddress = ref('');
 const isLoading = ref(false);
 const buttonText = ref('🔗 Подключить TON кошелёк');
 
+// Проверка подключенного кошелька
 onMounted(async () => {
   if (connector.connected) {
-    walletAddress.value = connector.account?.address || '';
+    walletAddress.value = connector.account?.address;
     buttonText.value = `✅ ${shortAddress(walletAddress.value)}`;
-    if (walletAddress.value) {
-      console.log('[TonConnectButton] Успешно подключён TON-кошелёк:', walletAddress.value);
-    }
   }
 });
 
@@ -39,49 +28,46 @@ const handleConnect = async () => {
   isLoading.value = true;
   try {
     const wallets = await connector.getWallets();
-    const walletConnectionSource = wallets[0];
-    await connector.connect(walletConnectionSource);
-    walletAddress.value = connector.account?.address || '';
+    const wallet = wallets.find(w => w.name === 'Telegram Wallet') || wallets[0];
+    await connector.connect(wallet);
+    walletAddress.value = connector.account?.address;
     buttonText.value = `✅ ${shortAddress(walletAddress.value)}`;
-    if (walletAddress.value) {
-      console.log('[TonConnectButton] Успешно подключён TON-кошелёк:', walletAddress.value);
-    }
-    // Заглушка: не отправляем на бэкенд
-    // await sendWalletToBackend(walletAddress.value);
+    await sendToBackend(walletAddress.value);
   } catch (error) {
-    console.error('Ошибка подключения:', error);
-    buttonText.value = '❌ Ошибка, попробуйте снова';
+    buttonText.value = '❌ Ошибка подключения';
   } finally {
     isLoading.value = false;
   }
 };
 
-const shortAddress = (addr: string) => {
-  return addr ? `${addr.slice(0, 4)}...${addr.slice(-4)}` : '';
-};
+const shortAddress = (addr) => addr ? `${addr.slice(0, 4)}...${addr.slice(-4)}` : '';
 
-// Заглушка: функция не используется
-// const sendWalletToBackend = async (address: string) => {};
+const sendToBackend = async (address) => {
+  const tg = window.Telegram?.WebApp;
+  if (!tg) return;
+
+  await fetch('https://your-backend.vercel.app/users/wallet', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${tg.initData}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ wallet_address: address })
+  });
+};
 </script>
 
 <style scoped>
-button {
-  padding: 10px 15px;
+.connect-button {
+  padding: 10px 16px;
   background: #0088cc;
   color: white;
   border: none;
-  border-radius: 10px;
-  cursor: pointer;
+  border-radius: 12px;
   font-size: 16px;
+  cursor: pointer;
 }
-button:disabled {
+.connect-button:disabled {
   opacity: 0.7;
-  cursor: not-allowed;
 }
-.wallet-address {
-  margin-top: 16px;
-  font-size: 1.1rem;
-  color: #222;
-  word-break: break-all;
-}
-</style> 
+</style>
