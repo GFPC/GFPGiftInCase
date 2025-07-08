@@ -32,7 +32,7 @@ const handleConnect = async () => {
     await connector.connect(wallet);
     walletAddress.value = connector.account?.address;
     buttonText.value = `✅ ${shortAddress(walletAddress.value)}`;
-    await sendToBackend(walletAddress.value);
+    //await sendToBackend(walletAddress.value);
   } catch (error) {
     buttonText.value = '❌ Ошибка подключения';
   } finally {
