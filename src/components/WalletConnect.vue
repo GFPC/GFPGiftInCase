@@ -5,20 +5,24 @@
     </div>
     <div v-else>
       <div v-if="wallets.length">
-        <div>Выберите кошелёк для подключения:</div>
+        <div>Доступен только TON Кошелёк (Telegram Wallet):</div>
         <ul>
           <li v-for="wallet in wallets" :key="wallet.appName">
-            <button class="ton-btn" @click="connectWallet(wallet)">
+            <button class="ton-btn" @click="showTonWalletInfo">
               <img :src="wallet.imageUrl" :alt="wallet.name" width="24" style="vertical-align:middle;margin-right:8px;">
               {{ wallet.name }}
             </button>
           </li>
         </ul>
+        <div class="info">
+          Подключение TON Кошелька через Mini App невозможно.<br>
+          Откройте <b>https://wallet.tg</b> напрямую или используйте официальный бот <a href="https://t.me/wallet" target="_blank">@wallet</a>.
+        </div>
       </div>
       <div v-else>
         <button :disabled="loading" @click="loadWallets" class="ton-btn">
           <span v-if="loading">⏳ Загрузка кошельков...</span>
-          <span v-else>Показать кошельки</span>
+          <span v-else>Показать TON Кошелёк</span>
         </button>
       </div>
     </div>
@@ -47,11 +51,11 @@ const loadWallets = async () => {
   error.value = ''
   try {
     const allWallets = await connector.getWallets()
-    // Фильтруем только те, у которых есть bridgeUrl (WebView support)
-    wallets.value = allWallets.filter((w: any) => w.bridgeUrl)
-    console.log('[WalletConnect] Supported wallets:', wallets.value)
+    // Оставляем только telegram-wallet
+    wallets.value = allWallets.filter((w: any) => w.appName === 'telegram-wallet')
+    console.log('[WalletConnect] Only telegram-wallet:', wallets.value)
     if (!wallets.value.length) {
-      error.value = 'Нет кошельков, поддерживающих WebView.'
+      error.value = 'TON Кошелёк (Telegram Wallet) не найден.'
     }
   } catch (e: any) {
     error.value = 'Ошибка загрузки кошельков: ' + (e?.message || e)
@@ -61,27 +65,8 @@ const loadWallets = async () => {
   }
 }
 
-const connectWallet = async (wallet: WalletInfoRemote) => {
-  loading.value = true
-  error.value = ''
-  console.log('[WalletConnect] connectWallet called for', wallet)
-  try {
-    await connector.connect(wallet)
-    console.log('[WalletConnect] connector.account:', connector.account)
-    walletAddress.value = connector.account?.address || ''
-    if (!walletAddress.value) {
-      error.value = 'Не удалось получить адрес кошелька.'
-      console.error('[WalletConnect] Failed to get wallet address')
-    } else {
-      console.log('[WalletConnect] Wallet address:', walletAddress.value)
-    }
-  } catch (e: any) {
-    error.value = 'Ошибка подключения: ' + (e?.message || e)
-    console.error('[WalletConnect] Error:', e)
-  } finally {
-    loading.value = false
-    console.log('[WalletConnect] connectWallet finished')
-  }
+const showTonWalletInfo = () => {
+  alert('Подключение TON Кошелька через Mini App невозможно. Откройте https://wallet.tg или используйте бота @wallet.')
 }
 </script>
 
@@ -115,5 +100,15 @@ const connectWallet = async (wallet: WalletInfoRemote) => {
   color: #e74c3c;
   margin-top: 12px;
   font-size: 0.95rem;
+}
+.info {
+  margin-top: 16px;
+  color: #555;
+  font-size: 0.98rem;
+  background: #f7f7f7;
+  border-radius: 8px;
+  padding: 12px 18px;
+  max-width: 350px;
+  text-align: center;
 }
 </style>
